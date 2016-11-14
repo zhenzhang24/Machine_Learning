@@ -4,48 +4,13 @@ import sys
 import math
 import string
 import ngram
+import utilities
 
-def load_pinyin(pinyin_file, myNgram):
-    used_charset = set() 
-    for k in myNgram.ngram_counts.keys():
-        prefixes = k.split(ngram.DELIM)
-        if len(prefixes) == 1:
-            used_charset.add(prefixes[0])
- 
-    i = 0
-    j = 0
-    char_set = []
-    pinyin_set = []
-    pinyin_index = {}
-    mappings = {}
-    for line in open(pinyin_file, 'r').readlines():
-        fields = line.split()
-        if len(fields) == 0: 
-            continue
-        char = fields[0]
-        if not char in used_charset:
-            continue
-        pinyins = fields[1:]
-        if len(pinyins) == 0:
-            continue
-        char_set.append(char)
-        mappings[i] = set([])
-        for t_pinyin in pinyins:
-            pinyin = t_pinyin.strip(string.digits)
-            if not pinyin_index.has_key(pinyin):
-                pinyin_set.append(pinyin)
-                pinyin_index[pinyin] = j
-                p_index = j
-                j += 1
-            else:
-                p_index = pinyin_index[pinyin]
-            mappings[i].add(p_index)
-        i += 1
-    return char_set, pinyin_set, mappings
 
 def build_model(ngram_train_file, smooth_dict, pinyin_file, outputfile):
     myNgram = ngram.load_smoothed_ngram(ngram_train_file, smooth_dict)
-    (char_set, pinyin_set, mappings) = load_pinyin(pinyin_file, myNgram)
+    (char_set, pinyin_set, c2p_mappings, p2c_mappings) = 
+        utilities.load_pinyin(pinyin_file, myNgram)
     print "size of char set ", len(char_set)
     output = open(outputfile, 'wc')
     output.writelines('hidden states:\n')

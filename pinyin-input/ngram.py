@@ -111,7 +111,7 @@ class Ngram:
                 res += decay * self.heldout_probs[0][3]
         return res
 
-    def MLE(self, cutted):
+    def predict(self, cutted):
         chained = []
         cur_ngram = []
         for w in cutted:
@@ -193,122 +193,6 @@ class Ngram:
             self.heldout_probs[freq] = (Tr, T, Nr, P)
         f.close()
 
-def load_ngram(filename):
-    ngram = Ngram()
-    for line in open(filename).readlines():
-       fields = line.split(' (') 
-       prefix = fields[0]
-       probs = fields[1].strip(')\n').split(', ')
-       count = int(probs[0])
-       prob = float(probs[1])
-       l = len(prefix.split(DELIM))
-       ngram.set_prob_dict(prefix, count, prob)
-    return ngram
-
-def load_smoothed_ngram(filename, smoothed_file):
-    ngram = load_ngram(filename)
-    ngram.load_smoothed_dict(smoothed_file)
-    return ngram
-
-def process_one_file(filename):
-    f = open(filename)
-    corpus = [EOB]
-    for line in f.readlines():
-        def etl(s):
-            s2 = eos_regex.sub(u'\u3002', s, 10)
-            s3 = sep_regex.sub(' ', s2, 10)
-            return s3
-
-        seg_list = filter(lambda x: len(x) > 0 and x.strip() != "", 
-                map(etl, jieba.cut(line)))
-        for w in seg_list:
-                corpus.append(w)
-                if w == EOS:
-                    corpus.append(EOB)
-    f.close()
-
-    return corpus[:len(corpus)-1]
-
-
-def process_files(root_dir):
-    corpus = []
-    i = 1
-    for name in os.listdir(root_dir):
-        if os.path.isfile(os.path.join(root_dir, name)):
-            sys.stderr.write("process file %d %s\n"%(i,
-                os.path.join(root_dir, name)))
-            corpus.extend(process_one_file(os.path.join(root_dir, name)))
-            i += 1
-    return corpus
-
-def build_and_save_ngram(corpus, output, n=3):
-    ngram = Ngram()
-    ngram.build_ngram(corpus, n)
-    outputfile = open(output, 'wc')
-    for k,v in ngram.ngram_probs.items():
-        outputfile.write('%s %s\n'%(k.encode('utf-8'), str(v)))
-
-def build_dict(old_dir, output, n=3):
-    corpus = process_files(old_dir)
-    build_and_save_ngram(corpus, output, n)
-
-def build_dict_from_single_file(filename, output, n=3):
-    corpus = process_one_file(filename)
-    build_and_save_ngram(corpus, output, n)
-
-def predict(dictfile, inputfile):
-    ngram = load_ngram(dictfile)
-    paragraph = process_one_file(inputfile)
-    (chain, prob) = ngram.MLE(paragraph)
-    print prob
-
-parser = OptionParser()
-parser.add_option("-b", "--build", 
-                action='store_true', dest='is_build', 
-                default=False,
-                help="build training ngram") 
-parser.add_option("-f", "--file", dest="filename",
-                help="build ngram from single file", metavar="FILE")
-parser.add_option("-d", "--dir", dest="dir",
-                help="build ngram from dir", metavar="DIR")
-parser.add_option("-i", "--dict", dest="dict",
-                help="store dict", metavar="DICT")
-
-
-parser.add_option("-c", "--crossvalidate", 
-                action='store_true', dest='crossvalidate', 
-                default=False,
-                help="build heldout ngram") 
-parser.add_option("-t", "--train", dest="train_dict",
-                help="load training ngram", metavar="DICT")
-parser.add_option("-o", "--heldout", dest="heldout_dict",
-                help="load heldout ngram", metavar="DICT")
-
-parser.add_option("-p", "--predict", 
-                action='store_true', dest='predict', 
-                default=False,
-                help="predict MLE of an input file") 
-parser.add_option("-s", "--smoothed", dest="smoothed_dict",
-                help="load smoothed prob dict", metavar="DICT")
-
-
-(options, args) = parser.parse_args()
-#predict(sys.argv[1], sys.argv[2])
-#build_dict_from_single_file(sys.argv[1])
-#build_dict(sys.argv[1], sys.argv[2])
-if options.is_build:
-    if (options.filename and options.dict):
-        build_dict_from_single_file(options.filename, options.dict)
-    if (options.dir and options.dict):
-        build_dict(options.dir, options.dict)
-if options.crossvalidate:
-    if options.train_dict and options.heldout_dict:
-        train_ngram = load_ngram(options.train_dict)
-        heldout_ngram = load_ngram(options.heldout_dict)
-        train_ngram.cross_validate(heldout_ngram, options.dict)
-if options.predict:
-    if (options.filename and options.train_dict and options.smoothed_dict):
-        train_ngram = load_ngram(options.train_dict)
-        train_ngram.load_smoothed_dict(options.smoothed_dict)
-        paragraph = process_one_file(options.filename)
-        print train_ngram.MLE(paragraph)
+    def prepare_input_from_string(self. s):
+        cutted = list(jieba.cut(s))
+        return cutted
