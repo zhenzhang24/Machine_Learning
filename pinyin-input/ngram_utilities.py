@@ -8,21 +8,21 @@ import ngram
 from optparse import OptionParser
 
 def load_ngram(filename):
-    ngram = Ngram()
+    i_ngram = ngram.Ngram()
     for line in open(filename).readlines():
        fields = line.split(' (') 
        prefix = fields[0]
        probs = fields[1].strip(')\n').split(', ')
        count = int(probs[0])
        prob = float(probs[1])
-       l = len(prefix.split(DELIM))
-       ngram.set_prob_dict(prefix, count, prob)
-    return ngram
+       l = len(prefix.split(ngram.DELIM))
+       i_ngram.set_prob_dict(prefix, count, prob)
+    return i_ngram
 
 def load_smoothed_ngram(filename, smoothed_file):
-    ngram = load_ngram(filename)
-    ngram.load_smoothed_dict(smoothed_file)
-    return ngram
+    i_ngram = ngram.load_ngram(filename)
+    i_ngram.load_smoothed_dict(smoothed_file)
+    return i_ngram
 
 def process_one_file(filename):
     f = open(filename)
@@ -56,10 +56,10 @@ def process_files(root_dir):
     return corpus
 
 def build_and_save_ngram(corpus, output, n=3):
-    ngram = Ngram()
-    ngram.build_ngram(corpus, n)
+    i_ngram = Ngram()
+    i_ngram.build_ngram(corpus, n)
     outputfile = open(output, 'wc')
-    for k,v in ngram.ngram_probs.items():
+    for k,v in i_ngram.ngram_probs.items():
         outputfile.write('%s %s\n'%(k.encode('utf-8'), str(v)))
 
 def build_dict(old_dir, output, n=3):
@@ -71,7 +71,7 @@ def build_dict_from_single_file(filename, output, n=3):
     build_and_save_ngram(corpus, output, n)
 
 def predict(dictfile, inputfile):
-    ngram = load_ngram(dictfile)
+    i_ngram = load_ngram(dictfile)
     paragraph = process_one_file(inputfile)
-    (chain, prob) = ngram.predict(paragraph)
+    (chain, prob) = i_ngram.predict(paragraph)
     print prob

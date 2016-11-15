@@ -193,6 +193,6 @@ class Ngram:
             self.heldout_probs[freq] = (Tr, T, Nr, P)
         f.close()
 
-    def prepare_input_from_string(self. s):
+    def prepare_input_from_string(self, s):
         cutted = list(jieba.cut(s))
         return cutted
