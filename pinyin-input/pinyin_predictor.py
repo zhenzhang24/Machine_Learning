@@ -1,10 +1,14 @@
 # Author: Zhen Zhang
+# -*- coding: utf-8 -*-
 
 import sys
 import hmm
 import ngram
 import ngram_utilities as nutil
 import pinyin_utilities as pinyin_util
+
+g_char_level_dict_path = "/Users/zhenzhang/Documents/ML/data/pinyin-input/models/sentence_split/training_data.txt"
+PRUNE_LEN = 3
 
 class InputMethod:
 
@@ -14,7 +18,10 @@ class InputMethod:
         self.c2p = c2p
         self.p2c = p2c
         self.model = model
+        self.load_char_level_ngram()
 
+    def load_char_level_ngram(self):
+        self.char_level_ngram = nutil.load_ngram(g_char_level_dict_path)
 
     def predict(self, pinyin):
         self.s = pinyin
@@ -41,23 +48,38 @@ class InputMethod:
             candidates.append(candidate_chars)
         # enumerate to generate all candidates
         
-        results = self.enumerate_candidate(candidates)
-        return map(lambda x: ''.join(x), results)
-
-    def enumerate_candidate(self, candidates):
         if len(candidates) == 0:
             return []
-        first_chars = candidates[0]
-        rest = self.enumerate_candidate(candidates[1:])
-        results = []
-        for c in first_chars:
-            if len(rest) == 0:
-                results.append([c])
-                continue
-            for r in rest:
-                results.append([c] + r)
-        return results
+        cur_results = []
+        for c in candidates[0]:
+            cur_results.append([c])
+        results = self.enumerate_candidate(cur_results, candidates[1:])
+        return map(lambda x: ''.join(x), results)
 
+    def enumerate_candidate(self, cur_results, remaining):
+        if len(remaining) == 0:
+            return cur_results
+        results = []
+        next_chars = remaining[0]
+        for res in cur_results:
+            if len(res) >= PRUNE_LEN and self.prune(res):
+                continue 
+            for c in next_chars: 
+                    results.append(res + [c])
+        return self.enumerate_candidate(results, remaining[1:])
+
+    def prune(self, prefix):
+        if len(prefix) <= 1: 
+            return False
+        miss_count = 0
+        for i in range(len(prefix)-1):
+            if not self.char_level_ngram.ngram_counts.has_key(
+                    ngram.DELIM.join(prefix[i:i+2])):
+                miss_count += 1
+                if miss_count >= 2:
+                    #print "pruning because ", ngram.DELIM.join(prefix[i:i+2])
+                    return True
+        return False
 
     def evaluate(self, candidate):
         prepared = self.model.prepare_input_from_string(candidate)

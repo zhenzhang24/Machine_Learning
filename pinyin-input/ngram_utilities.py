@@ -70,8 +70,19 @@ def build_dict_from_single_file(filename, output, n=3):
     corpus = process_one_file(filename)
     build_and_save_ngram(corpus, output, n)
 
+def filter_dict(dictfile, output):
+    i_ngram = load_ngram(dictfile)
+    all_keys = i_ngram.ngram_probs.keys()
+    for k in all_keys:
+        if i_ngram.ngram_counts[k] <= 1:
+            del i_ngram.ngram_probs[k]
+    outputfile = open(output, 'wc')
+    for k,v in i_ngram.ngram_probs.items():
+        outputfile.write('%s %s\n'%(k, str(v)))
+
 def predict(dictfile, inputfile):
     i_ngram = load_ngram(dictfile)
     paragraph = process_one_file(inputfile)
     (chain, prob) = i_ngram.predict(paragraph)
     print prob
+

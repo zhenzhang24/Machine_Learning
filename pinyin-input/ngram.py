@@ -13,6 +13,8 @@ EOB = u'\uFF1F'
 INFINITY_SMALL = -10000000
 DELIM = '|'
 MIN_SUPPORT = 2
+MAGNIFIER = 1E5
+MIN_SCORE = -1000
 
 class Ngram:
 
@@ -103,13 +105,17 @@ class Ngram:
             if self.ngram_counts.has_key(prefix) and \
                 self.ngram_counts[prefix] >= MIN_SUPPORT and \
                 self.ngram_probs.has_key(prefix):
-                #print "find prefix ", prefix, math.log(self.ngram_probs[prefix][1])
-                res += decay * math.log(self.ngram_probs[prefix][1])
-
+                #print "find prefix ", prefix, self.ngram_probs[prefix][1]
+                res += decay * self.ngram_probs[prefix][1] * MAGNIFIER
             else:
                 #print "not found prefix ", prefix, self.heldout_probs[0][3]
-                res += decay * self.heldout_probs[0][3]
-        return res
+                heldout_score = math.exp(self.heldout_probs[0][3])
+                heldout_score = 0
+                res += decay * heldout_score * MAGNIFIER
+        if res == 0:
+            return MIN_SCORE
+        else:
+            return math.log(res/MAGNIFIER)
 
     def predict(self, cutted):
         chained = []
@@ -127,9 +133,7 @@ class Ngram:
         total_prob = 0
         for k in chained:
             prob = self.get_prob(k)
-            if prob == 0:
-                print "not found:", k.encode('utf-8')
-                return chained, INFINITY_SMALL
+            #print "chained ", k.encode("utf-8"), prob
             total_prob += prob
         return chained, total_prob
 
