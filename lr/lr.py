@@ -58,28 +58,6 @@ def calc_accuracy(pred_val, real_val):
             err += 1
     return (1-float(err)/len(real_val))*100
 
-def calc_reverse_order(pred_val, real_val):
-    orders = []
-    for i in range(len(real_val)):
-        orders.append((pred_val[i], real_val[i]))
-    return inverse_ratio(orders)
-
-def inverse_ratio(order):
-    # in y_, -rating ascendant order.
-    order = sorted(order, key=lambda x:(x[0], -x[1]))
-
-    prev_count = {} 
-    inverse_count = 0 
-    total_count = 0 
-    for i, (_, r) in enumerate(order): 
-        for key, count in prev_count.iteritems():
-            total_count += count
-            if key > r: inverse_count += count
-                                                                                    # update previous count 
-        prev_count[r] = prev_count.get(r, 0) + 1
-    inv_ratio = inverse_count * 100.  / total_count
-    return inv_ratio, inverse_count, total_count
-
 training_data_file = sys.argv[1]
 test_data_file = sys.argv[2]
 lr = SkLearnLogRegression()
