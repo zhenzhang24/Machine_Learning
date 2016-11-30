@@ -8,13 +8,13 @@ import lr_utils as utils
 g_debug = 0
 
 class MyLogisticRegression:
-    def __init__(self, iter=10, multiclass=False):
+    def __init__(self, iter=10):
         self.iter = iter
-        self.multiclass = multiclass
         self.learning_rate = 0.2
         self.iter = iter
         self.stop_criteria = 0.01 # error threhold  for stopping
         self.vectorizer = DictVectorizer(sparse=False)
+        self.label_binarizer = preprocessing.LabelBinarizer()
 
     def train(self, filename):
         (self.data, self.target) = utils.load_data(filename)
@@ -37,7 +37,7 @@ class MyLogisticRegression:
                 print self.params
             self.Y_prob = self.calc_prob(self.X, self.params)
             errors = self.calc_errors(self.Y_prob, self.Y)
-            self.params = self.update_params(errors, self.params)
+            self.update_params(errors)
             total_errors = 0
             for err in errors.flat:
                 total_errors += abs(err)
@@ -48,7 +48,6 @@ class MyLogisticRegression:
                 print "errors"
                 print total_errors
                 print '\n'
-
             if (abs(total_errors) < self.stop_criteria) or iter >= self.iter:
                 break
         return self.make_decision(self.Y_prob)
@@ -62,7 +61,6 @@ class MyLogisticRegression:
                 size=(self.n_features+1, self.num_classes))
 
     def make_label(self, target):
-        self.label_binarizer = preprocessing.LabelBinarizer()
         binary_labels = self.label_binarizer.fit_transform(target)
         self.num_classes = len(self.label_binarizer.classes_)
         return binary_labels
@@ -101,17 +99,16 @@ class MyLogisticRegression:
 
     # error.T * X is a n_features + 1 * n_labels matrix,
     # Each column represent the gradient decendent of params over a class.
-    def update_params(self, error, cur_params):
+    def update_params(self, error):
         delta = -np.dot(self.X.T, error) \
                 * self.learning_rate / self.num_samples
         if g_debug:
             print "delta"
             print delta
-        return cur_params - delta
+        self.params = self.params - delta
 
     def make_decision(self, Y_prob):
         return self.label_binarizer.inverse_transform(Y_prob)
-        #return np.argmax(Y_prob, axis=1)
 
 lr = MyLogisticRegression(iter=int(sys.argv[2]))
 g_debug = int(sys.argv[3])
