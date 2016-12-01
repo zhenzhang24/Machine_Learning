@@ -110,6 +110,11 @@ class MyLogisticRegression:
     def make_decision(self, Y_prob):
         return self.label_binarizer.inverse_transform(Y_prob)
 
+if len(sys.argv) != 4:
+    print 'Usage:'
+    print ' %s <iris_data> <iter_count> <debug_or_not>' % sys.argv[0]
+    sys.exit(-1)
+
 lr = MyLogisticRegression(iter=int(sys.argv[2]))
 g_debug = int(sys.argv[3])
 res = lr.train(sys.argv[1])

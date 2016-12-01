@@ -4,7 +4,7 @@ from sklearn.feature_extraction import DictVectorizer
 import numpy as np
 
 class BinominalLogisticRegression(MyLogisticRegression):
-    def __init__(self, iter=10)
+    def __init__(self, iter=10):
         MyLogisticRegression(self, iter, multiclass=False)
 
     def fit(self, X, Y):
