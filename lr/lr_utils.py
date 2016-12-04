@@ -1,4 +1,8 @@
 import sys
+import numpy as np
+
+def conv_column_vec(arr):
+    return np.array([arr]).T
 
 def load_data(file_name):
     f = open(file_name)
