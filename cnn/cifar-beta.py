@@ -2,6 +2,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 import numpy as np
 import input_data
+import random
 
 class ConvLayer:
     def __init__(self, num_input_fm, num_filter, filter_shape, stride):
@@ -103,6 +104,15 @@ def initiate_layer(layer):
 cur_index = 0
 def generate_next_batch(batch_size):
     global cur_index, train_input, train_output
+    
+    ids = random.sample(range(len(train_input)), batch_size)
+    batch_x = []
+    batch_y = []
+    for id in ids:
+        batch_x.append( train_input[id] )
+        batch_y.append( train_output[id] )
+    return np.array(batch_x), np.array(batch_y)
+
     data_size = len(train_input)
     end_index = (cur_index + batch_size) % data_size
     if end_index < cur_index:
@@ -123,77 +133,76 @@ def evaluate(output_logit, obsv):
     return accuracy
 
 
-image_width = 32
-image_height = 32
-initial_num_features = 3
-learning_rate = 0.001
-batch_size = 50
-rounds = 200
-output_dimension = 10
+# main-entrance.
+if __name__ == '__main__':
+    image_width = 32
+    image_height = 32
+    initial_num_features = 3
+    learning_rate = 0.001
+    batch_size = 50
+    rounds = 200
+    output_dimension = 10
 
-train_input, train_output = input_data.read_data_sets(
-    "/Users/zhenzhang/Documents/ML/data/cifar-10/data_batch_1")
+    train_input, train_output = input_data.read_data_sets(
+        "/home/nickgu/lab/datasets/cifar10/cifar-10-batches-py/data_batch_1")
 
-x = tf.placeholder(tf.float32, 
-        shape=(None, image_height, image_width, initial_num_features))
-y_ = tf.placeholder(tf.int64, shape=(None))
+    x = tf.placeholder(tf.float32, 
+            shape=(None, image_height, image_width, initial_num_features))
+    y_ = tf.placeholder(tf.int64, shape=(None))
 
-configs = []
-configs.append({'type':'conv', 'config':(3, 32, 3, 1)})
-#configs.append({'type':'conv', 'config':(32, 32, 3, 1)})
-configs.append({'type':'pool', 'config':(3, 2)})
+    configs = []
+    configs.append({'type':'conv', 'config':(3, 32, 3, 1)})
+    #configs.append({'type':'conv', 'config':(32, 32, 3, 1)})
+    configs.append({'type':'pool', 'config':(3, 2)})
 
-configs.append({'type':'conv', 'config':(32, 64, 3, 1)})
-#configs.append({'type':'conv', 'config':(64, 64, 3, 1)})
-configs.append({'type':'pool', 'config':(3, 2)})
+    configs.append({'type':'conv', 'config':(32, 64, 3, 1)})
+    #configs.append({'type':'conv', 'config':(64, 64, 3, 1)})
+    configs.append({'type':'pool', 'config':(3, 2)})
 
-configs.append({'type':'conv', 'config':(64, 128, 3, 1)})
-configs.append({'type':'pool', 'config':(3, 1)})
+    configs.append({'type':'conv', 'config':(64, 128, 3, 1)})
+    configs.append({'type':'pool', 'config':(3, 1)})
 
-network = CNNNet(configs)
-(cnn_output, cnn_structure) = network.forward(x)
+    network = CNNNet(configs)
+    (cnn_output, cnn_structure) = network.forward(x)
 
-fc_1_num_features = 256
-shape = cnn_output.get_shape()
-fc_1_input_shape = int(np.prod(shape[1:]))
-fc_1 = FCLayer(fc_1_input_shape, fc_1_num_features).matmul(cnn_output)
+    fc_1_num_features = 256
+    shape = cnn_output.get_shape()
+    fc_1_input_shape = int(np.prod(shape[1:]))
+    fc_1 = FCLayer(fc_1_input_shape, fc_1_num_features).matmul(cnn_output)
 
-fc_2_num_features = 256
-fc_2 = FCLayer(fc_1_num_features, fc_2_num_features).matmul(fc_1)
+    fc_2_num_features = 256
+    fc_2 = FCLayer(fc_1_num_features, fc_2_num_features).matmul(fc_1)
 
 
-fc_output_num_features = output_dimension
-fc_output = FCLayer(fc_2_num_features, fc_output_num_features, False).matmul(fc_2)
+    fc_output_num_features = output_dimension
+    fc_output = FCLayer(fc_2_num_features, fc_output_num_features, False).matmul(fc_2)
 
-keep_prob = tf.placeholder(tf.float32)
-pred_logits = fc_output
+    keep_prob = tf.placeholder(tf.float32)
+    pred_logits = fc_output
 
-loss = tf.nn.sparse_softmax_cross_entropy_with_logits(pred_logits, y_) 
-optimizer = tf.train.AdamOptimizer(learning_rate)
-trainer = optimizer.minimize(loss)
-evaluator = evaluate(pred_logits, y_)
+    loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred_logits, labels=y_) 
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    trainer = optimizer.minimize(loss)
+    evaluator = evaluate(pred_logits, y_)
 
-init = tf.global_variables_initializer()
-sess = tf.Session()
-sess.run(init)
-num_examples = 10000
-steps = num_examples / batch_size
-print configs
-for r in range(rounds):
-    for i in range(steps):
-        batch_x, batch_y = generate_next_batch(batch_size)
-        _, x_in, output, accuracy = sess.run(
-                [trainer, x, pred_logits, evaluator],
-                feed_dict={x:batch_x, y_:batch_y, keep_prob:0.5})
-        if i % 100 == 0:
-            x_in, output, structure= sess.run(
-                    [x, pred_logits, cnn_structure],
+    init = tf.global_variables_initializer()
+    sess = tf.Session()
+    sess.run(init)
+    num_examples = len(train_input)
+    steps = num_examples / batch_size
+    print configs
+    for r in range(rounds):
+        print 'Round: %d' % r
+        for i in range(steps):
+            batch_x, batch_y = generate_next_batch(batch_size)
+            _, x_in, output, accuracy = sess.run(
+                    [trainer, x, pred_logits, evaluator],
                     feed_dict={x:batch_x, y_:batch_y, keep_prob:0.5})
-            print "input shape", x_in.shape
-            print "output shape", output.shape
-            for l in structure:
-                print l
+            if i % 100 == 0:
+                accuracy = sess.run(evaluator, 
+                    feed_dict={x:train_input, y_:train_output, keep_prob:0.5})
+                print "evaluating accuracy %d steps: %f" % (r*steps + i, accuracy)
 
-            accuracy = sess.run(evaluator, 
-                feed_dict={x:train_input, y_:train_output, keep_prob:0.5})
-            print "evaluating accuracy %d steps: %f" % (r*steps + i, accuracy)
+
+
+
